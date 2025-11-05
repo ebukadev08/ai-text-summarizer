@@ -32,7 +32,6 @@ def summarize():
 def telex_agent():
     try:
         data = request.get_json()
-
         user_message = data.get("data", {}).get("message", "")
         if not user_message:
             return jsonify({

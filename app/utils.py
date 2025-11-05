@@ -7,6 +7,9 @@ def validate_request(data):
             "status": "error",
             "message": "Missing required field 'text'."
         }), 400
+
+    if "style" not in data or not data["style"]:
+        data["style"] = "concise"
     return None
 
 
