@@ -10,45 +10,54 @@ app = Flask(__name__)
 def home():
     return jsonify({
         "message": "AI Text Summarizer API is running!",
-        "available_endpoints": ["/summarize"],
+        "available_endpoints": ["/a2a/summarize"],
         "creator": "Your Name"
-    })
+    }), 200
 
 
-@api.route("/summarize", methods=["POST"])
-def summarize():
-    data = request.get_json()
-    validation = validate_request(data)
-    if validation:
-        return validation
-
-    text = data["text"]
-    style = data.get("style", "concise")
-
-    result = summarize_text(text, style)
-    return success_response(result)
-
-@app.route("/telex", methods=["POST"])
-def telex_agent():
+@api.route("/a2a/summarize", methods=["POST"])
+def summarize_a2a():
     try:
-        data = request.get_json()
-        user_message = data.get("data", {}).get("message", "")
-        if not user_message:
+        data = request.get_json(force=True)
+
+        validation = validate_request(data)
+        if validation:
+            return validation
+
+   
+        if data.get("type") == "a2a":
+            message = data.get("message", "")
+            if not message:
+                return jsonify({
+                    "type": "a2a-response",
+                    "status": "error",
+                    "response": "Missing 'message' field in A2A request."
+                }), 400
+
+            result = summarize_text(message)
+            return jsonify({
+                "type": "a2a-response",
+                "status": "success",
+                "response": result.get("summary", "")
+            }), 200
+
+        
+        elif "text" in data:
+            text = data["text"]
+            style = data.get("style", "concise")
+            result = summarize_text(text, style)
+            return success_response(result)
+
+        
+        else:
             return jsonify({
                 "status": "error",
-                "message": "No input text provided."
+                "message": "Invalid format. Use 'text' or A2A 'message'."
             }), 400
-
-        # Call your summarizer
-        result = summarize_text(user_message, style="concise")
-
-        return jsonify({
-            "status": "success",
-            "response": result["summary"]
-        }), 200
 
     except Exception as e:
         return jsonify({
+            "type": "a2a-response",
             "status": "error",
-            "message": str(e)
+            "response": f"Server error: {str(e)}"
         }), 500
